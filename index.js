@@ -25,30 +25,49 @@ try {
 					if(!note.attachments.length)
 						delete note.attachments
 
-					console.log("#### " + note.title)
 					if(!note.description)
 						delete note.description
 					else {
+						if(!note.description.isNoteContent)
+							continue
+
+						console.log("#### " + note.title)
+						delete note.description.isNoteContent
 						for(let line of note.description.lines) {
 							console.log(line)
 						}
 						delete note.description.lines
+
+						if(!Object.keys(note.description).length)
+							delete note.description
+						delete note.title
 					}
-					delete note.title
 				}
-				notes.notes = notes.notes.filter(note => Object.keys(note).length)
-				if(!notes.notes.length)
-					delete notes.notes
+				removeEmptyList(notes, "notes")
 				delete notes.title
 			}
-			project.notes = project.notes.filter(note => Object.keys(note).length)
-
-			if(!project.notes.length)
-				delete project.notes
+			removeEmptyList(project, "notes")
+			for(let tasks of project.tasks) {
+				removeEmptyList(tasks, "tasks")
+				delete tasks.title
+			}
+			removeEmptyList(project, "tasks")
+			for(let resources of project.resources) {
+				removeEmptyList(resources, "resources")
+				delete resources.title
+			}
+			removeEmptyList(project, "resources")
 		}
 	}
 	const leftovers = JSON.stringify(data, null, "\t");
 	fs.writeFileSync('./leftover.json', leftovers);
 } catch (err) {
   console.error(err);
+}
+
+function removeEmptyList(obj, prop) {
+	obj[prop] = obj[prop].filter(inner => Object.keys(inner).length)
+	if(!obj[prop].length)
+		delete obj[prop]
+
 }
