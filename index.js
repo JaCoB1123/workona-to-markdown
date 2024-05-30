@@ -3,13 +3,18 @@ const fs = require('node:fs');
 try {
 	const text = fs.readFileSync('./userData.json', 'utf8');
 	const data = JSON.parse(text);
+	let markdown = "";
 	for(let workspace of [...data.Workspaces, {workspaces: data["Archived Workspaces"], title: "Archived Workspaces"}]) {
-		console.log("# " + workspace.title);
+		markdown += "# " + workspace.title + "\n";
+		delete workspace.title
+
 		for(let project of workspace.workspaces) {
-			console.log("## " + project.title);
+			markdown += "## " + project.title + "\n";
+			delete project.color
+			delete project.title
 
 			for(let tab of project.tabs) {
-				console.log("- [" + tab.title + "](" + tab.url + ")")
+				markdown += "- [" + tab.title + "](" + tab.url + ")\n"
 				delete tab.title
 				delete tab.url
 			}
@@ -18,7 +23,7 @@ try {
 				delete project.tabs
 
 			for(let notes of project.notes) {
-				console.log("### " + notes.title)
+				let notesText = "";
 				for(let note of notes.notes) {
 					if(!note.title)
 						delete note.title
@@ -31,10 +36,10 @@ try {
 						if(!note.description.isNoteContent)
 							continue
 
-						console.log("#### " + note.title)
+						notesText += "#### " + note.title + "\n"
 						delete note.description.isNoteContent
 						for(let line of note.description.lines) {
-							console.log(line)
+							notesText += line + "\n"
 						}
 						delete note.description.lines
 
@@ -43,22 +48,35 @@ try {
 						delete note.title
 					}
 				}
+
+				if(notesText) {
+					markdown += "### " + notes.title + "\n" + notesText;
+				}
+
 				removeEmptyList(notes, "notes")
 				delete notes.title
 			}
 			removeEmptyList(project, "notes")
+
 			for(let tasks of project.tasks) {
 				removeEmptyList(tasks, "tasks")
 				delete tasks.title
 			}
 			removeEmptyList(project, "tasks")
+
 			for(let resources of project.resources) {
 				removeEmptyList(resources, "resources")
 				delete resources.title
 			}
 			removeEmptyList(project, "resources")
 		}
+		removeEmptyList(workspace, "workspaces")
 	}
+	removeEmptyList(data, "Workspaces")
+	removeEmptyList(data, "Archived Workspaces")
+
+	fs.writeFileSync('./result.md', markdown);
+
 	const leftovers = JSON.stringify(data, null, "\t");
 	fs.writeFileSync('./leftover.json', leftovers);
 } catch (err) {
